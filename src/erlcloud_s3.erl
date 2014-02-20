@@ -20,6 +20,7 @@
          set_object_acl/3, set_object_acl/4,
          make_link/3, make_link/4,
          make_get_url/3, make_get_url/4,
+         make_put_url/3, make_put_url/4,
          start_multipart/2, start_multipart/5,
          upload_part/5, upload_part/7,
          complete_multipart/4, complete_multipart/6,
@@ -623,11 +624,24 @@ make_get_url(Expire_time, BucketName, Key) ->
 -spec make_get_url(integer(), string(), string(), aws_config()) -> iolist().
 
 make_get_url(Expire_time, BucketName, Key, Config) ->
-    {Sig, Expires} = sign_get(Expire_time, BucketName, erlcloud_http:url_encode_loose(Key), Config),
+    make_url("GET", Expire_time, BucketName, Key, Config).
+
+-spec make_url(string(), integer(), string(), string(), aws_config()) -> iolist().
+make_url(Method, Expire_time, BucketName, Key, Config) ->
+    {Sig, Expires} = sign(Method, Expire_time, BucketName, erlcloud_http:url_encode_loose(Key), Config),
     [Config#aws_config.s3_scheme, BucketName, ".", Config#aws_config.s3_host, port_spec(Config), "/", Key,
      "?AWSAccessKeyId=", erlcloud_http:url_encode(Config#aws_config.access_key_id),
      "&Signature=", erlcloud_http:url_encode(Sig),
      "&Expires=", Expires].
+
+
+-spec make_put_url(integer(), string(), string()) -> iolist().
+make_put_url(Expire_time, BucketName, Key) ->
+    make_put_url(Expire_time, BucketName, Key, default_config()).
+
+-spec make_put_url(integer(), string(), string(), aws_config()) -> iolist().
+make_put_url(Expire_time, BucketName, Key, Config) ->
+    make_url("PUT", Expire_time, BucketName, Key, Config).
 
 -spec start_multipart(string(), string()) -> {ok, proplist()} | {error, any()}.
 start_multipart(BucketName, Key)
